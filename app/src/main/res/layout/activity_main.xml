@@ -10,9 +10,4 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.rushabh.chatapp.MainActivity">
 
-    <Button
-        android:id="@+id/logOut"
-        android:text="Log out"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 </RelativeLayout>
