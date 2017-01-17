@@ -17,8 +17,7 @@ public class DAL extends SQLiteOpenHelper {
     private Context context = null;
     private SQLiteDatabase sqlDB;
     ContentValues cv = new ContentValues();
-    String tableName = "ChatDetails";
-
+    String tableName = "chatDetails";
     public DAL(Context context) {
         super(context, databaseName, null, 1);
         this.context = context;
@@ -27,7 +26,7 @@ public class DAL extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         // Create table
-        sqLiteDatabase.execSQL("create table ChatDetails ( _id integer primary key autoincrement, name text)");
+        sqLiteDatabase.execSQL("create table chatDetails ( _id integer primary key autoincrement, name text)");
     }
 
     @Override
@@ -45,25 +44,26 @@ public class DAL extends SQLiteOpenHelper {
     }
 
     public void insertData(String name){
+        openDB();
         cv.put("name",name);
-        long data = sqlDB.insert(tableName,null,cv);
-        if (data == 1){
-            Toast.makeText(context, "Data inserted successfully", Toast.LENGTH_SHORT).show();
-        }else {
-            Toast.makeText(context, "Data not inserted", Toast.LENGTH_SHORT).show();
-        }
+        sqlDB.insert(tableName,null,cv);
+        closeDB();
     }
 
     public void deleteData(){
+        openDB();
         sqlDB.delete(tableName,null,null);
+        closeDB();
     }
 
     public String checkData(){
+        openDB();
         String name = null;
         Cursor cursor = sqlDB.query(tableName,null,null,null,null,null,null);
         while (cursor.moveToNext()){
             name = cursor.getString(cursor.getColumnIndex("name"));
         }
+        closeDB();
         return name;
     }
 }

@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     Button logOut;
     private GoogleApiClient mGoogleApiClient;
-    final DAL obj = new DAL(this);
+    private DAL obj;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         logOut = (Button) findViewById(R.id.logOut);
         logOut.setOnClickListener(this);
+
+        obj  = new DAL(this);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()

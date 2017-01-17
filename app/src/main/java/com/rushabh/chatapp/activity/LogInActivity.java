@@ -35,7 +35,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     private static final int RC_SIGN_IN = 9001;
 //    private FirebaseAuth.AuthStateListener mAuthListener;
     private FirebaseAuth mAuth;
-    final DAL obj = new DAL(this);
+    private DAL obj;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +43,8 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         setContentView(R.layout.activity_log_in);
 
         name = (TextView) findViewById(R.id.name);
+
+        obj = new DAL(this);
 
         CheckDatabase();
 
@@ -102,7 +104,6 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     public void onClick(View view) {
         if (view.getId() == R.id.signInBtn) {
             signIn();
-            Log.e("inside","On click");
         }
     }
 
@@ -110,36 +111,30 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     private void signIn() {
         Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
         startActivityForResult(signInIntent, RC_SIGN_IN);
-        Log.e("inside","Sing in");
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.e("inside","onActivityResult");
 
         if (requestCode == RC_SIGN_IN) {
-            Log.e("inside","If statment");
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             handleSignInResult(result);
         }
     }
 
     private void handleSignInResult(GoogleSignInResult result) {
-        Log.e("inside","handleSignInResult");
         if (result.isSuccess()) {
             GoogleSignInAccount account = result.getSignInAccount();
 //            name.setText("Hello " + account.getDisplayName());
             obj.openDB();
             obj.insertData(account.getDisplayName());
             obj.closeDB();
-            Log.e("inside","isSuccess");
             Intent intent = new Intent(LogInActivity.this, MainActivity.class);
             intent.putExtra("name",account.getDisplayName());
             startActivity(intent);
         }else {
-            Log.e("inside","failed");
-            Log.e("status"," " + result.getStatus());
+
         }
     }
 
