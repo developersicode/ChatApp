@@ -5,10 +5,15 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.Auth;
@@ -19,8 +24,12 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 import com.rushabh.chatapp.DAL.DAL;
 import com.rushabh.chatapp.activity.LogInActivity;
+import com.rushabh.chatapp.adapter.messageAdapter;
+import com.rushabh.chatapp.dataObject.message;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
 
 
     private GoogleApiClient mGoogleApiClient;
@@ -41,6 +50,34 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
                 .build();
     }
+
+
+    private ArrayList<message> messages;
+
+    ImageView send;
+    EditText textMessage;
+    messageAdapter adapter;
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        messages = new ArrayList<>();
+
+        RecyclerView rv = (RecyclerView) findViewById(R.id.rv);
+        rv.setHasFixedSize(false);
+
+        LinearLayoutManager llm = new LinearLayoutManager(this);
+        rv.setLayoutManager(llm);
+
+        adapter = new messageAdapter(messages,this);
+        rv.setAdapter(adapter);
+
+        send = (ImageView) findViewById(R.id.send);
+        textMessage = (EditText) findViewById(R.id.textMessage);
+
+        send.setOnClickListener(this);
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -91,5 +128,20 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.send){
+            String message = textMessage.getText().toString();
+            String name = obj.checkData();
+
+            messages.add(new message(message,name));
+
+            adapter.notifyItemInserted(messages.size());
+            adapter.notifyDataSetChanged();
+
+            textMessage.setText("");
+        }
     }
 }
