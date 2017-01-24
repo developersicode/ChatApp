@@ -8,8 +8,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -30,7 +28,6 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
-import com.rushabh.chatapp.DAL.DAL;
 import com.rushabh.chatapp.activity.LogInActivity;
 import com.rushabh.chatapp.adapter.messageAdapter;
 import com.rushabh.chatapp.dataObject.message;
@@ -41,13 +38,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
     private GoogleApiClient mGoogleApiClient;
-    private DAL obj;
+    private FirebaseUser user;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        obj  = new DAL(this);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -65,13 +61,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     ImageView send;
     EditText textMessage;
     messageAdapter adapter;
-//    new data
     FirebaseApp app;
     FirebaseDatabase database;
-    FirebaseAuth auth;
+    FirebaseAuth mAuth;
     FirebaseStorage storage;
     DatabaseReference databaseRef;
-//    new data end
     @Override
     protected void onStart() {
         super.onStart();
@@ -91,18 +85,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         textMessage = (EditText) findViewById(R.id.textMessage);
 
         send.setOnClickListener(this);
-//new data
         app = FirebaseApp.getInstance();
         database = FirebaseDatabase.getInstance(app);
-        auth = FirebaseAuth.getInstance(app);
+        mAuth = FirebaseAuth.getInstance(app);
         storage = FirebaseStorage.getInstance(app);
+
+        user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null){
+
+        }else {
+            startActivity(new Intent(MainActivity.this,LogInActivity.class));
+        }
 
         databaseRef = database.getReference("chat");
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         
         if (user != null) {
-            // Name, email address, and profile photo Url
             String name = user.getDisplayName();
             String email = user.getEmail();
             Uri photoUrl = user.getPhotoUrl();
@@ -116,7 +115,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         }else {
             Toast.makeText(this, "Not inside", Toast.LENGTH_SHORT).show();
         }
-//        new data end
     }
 
 
@@ -160,9 +158,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             public void onResult(@NonNull Status status) {
             }
         });
-        obj.openDB();
-        obj.deleteData();
-        obj.closeDB();
+        mAuth.signOut();
         startActivity(new Intent(MainActivity.this, LogInActivity.class));
     }
 
@@ -175,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     public void onClick(View view) {
         if (view.getId() == R.id.send){
             String message = textMessage.getText().toString();
-            String name = obj.checkData();
+            String name = user.getDisplayName();
 
             databaseRef.push().setValue(new message(message,name));
             messages.add(new message(message,name));

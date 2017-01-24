@@ -1,5 +1,6 @@
 package com.rushabh.chatapp.activity;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -7,46 +8,42 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.Auth;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.rushabh.chatapp.DAL.DAL;
 import com.rushabh.chatapp.MainActivity;
 import com.rushabh.chatapp.R;
 
 public class LogInActivity extends AppCompatActivity implements View.OnClickListener, GoogleApiClient.OnConnectionFailedListener {
 
-    TextView name;
-    Button signOutBtn;
+    private EditText userEmail, userPassword;
+    Button signUp, signIn;
     SignInButton signInBtn;
     private GoogleApiClient mGoogleApiClient;
     private static final String TAG = "SignInActivity";
     private static final int RC_SIGN_IN = 9001;
     private FirebaseAuth.AuthStateListener mAuthListener;
     private FirebaseAuth mAuth;
-    private DAL obj;
+    String email, password;
+    FirebaseUser user;
+    ProgressDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_in);
 
-        name = (TextView) findViewById(R.id.name);
-
-        obj = new DAL(this);
-
-        CheckDatabase();
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -66,36 +63,79 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
+                user = firebaseAuth.getCurrentUser();
                 if (user != null) {
                     // User is signed in
-                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
+                    Log.e(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
+                    startActivity(new Intent(LogInActivity.this, MainActivity.class));
                 } else {
                     // User is signed out
-                    Log.d(TAG, "onAuthStateChanged:signed_out");
+                    Log.e(TAG, "onAuthStateChanged:signed_out");
                 }
             }
         };
 
-  }
+        userEmail = (EditText) findViewById(R.id.userEmail);
+        userPassword = (EditText) findViewById(R.id.userPassword);
+        signUp = (Button) findViewById(R.id.signUp);
+        signIn = (Button) findViewById(R.id.signIn);
 
-    private void CheckDatabase() {
-        obj.openDB();
-        String FullName = obj.checkData();
-        if (FullName == null) {
+        signUp.setOnClickListener(this);
+        signIn.setOnClickListener(this);
 
-        } else {
-            Intent intent = new Intent(LogInActivity.this, MainActivity.class);
-            intent.putExtra("name",FullName);
-            startActivity(intent);
-        }
-        obj.closeDB();
     }
 
     @Override
     public void onClick(View view) {
+
+        email = userEmail.getText().toString();
+        password = userPassword.getText().toString();
+
+        dialog = new ProgressDialog(this);
+        dialog.setMessage("Loading....");
+
         if (view.getId() == R.id.signInBtn) {
             signIn();
+        } else if (view.getId() == R.id.signUp) {
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Enter details first", Toast.LENGTH_SHORT).show();
+            } else {
+                dialog.show();
+                mAuth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                            @Override
+                            public void onComplete(@NonNull Task<AuthResult> task) {
+                                if (!task.isSuccessful()) {
+                                    Toast.makeText(LogInActivity.this, "Try again", Toast.LENGTH_SHORT).show();
+                                    userPassword.setText("");
+                                    dialog.dismiss();
+                                } else {
+                                    startActivity(new Intent(LogInActivity.this, MainActivity.class));
+                                    dialog.dismiss();
+                                }
+                            }
+                        });
+            }
+        } else if (view.getId() == R.id.signIn) {
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Enter details first", Toast.LENGTH_SHORT).show();
+            } else {
+                dialog.show();
+                mAuth.signInWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                            @Override
+                            public void onComplete(@NonNull Task<AuthResult> task) {
+                                if (!task.isSuccessful()) {
+                                    Toast.makeText(LogInActivity.this, "Try again", Toast.LENGTH_SHORT).show();
+                                    userPassword.setText("");
+                                    dialog.dismiss();
+                                } else {
+                                    startActivity(new Intent(LogInActivity.this, MainActivity.class));
+                                    dialog.dismiss();
+                                }
+                            }
+                        });
+            }
         }
     }
 
@@ -103,6 +143,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     private void signIn() {
         Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
         startActivityForResult(signInIntent, RC_SIGN_IN);
+        dialog.show();
     }
 
     @Override
@@ -117,16 +158,10 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
 
     private void handleSignInResult(GoogleSignInResult result) {
         if (result.isSuccess()) {
-            GoogleSignInAccount account = result.getSignInAccount();
-//            name.setText("Hello " + account.getDisplayName());
-            obj.openDB();
-            obj.insertData(account.getDisplayName());
-            obj.closeDB();
-            Intent intent = new Intent(LogInActivity.this, MainActivity.class);
-            intent.putExtra("name",account.getDisplayName());
-            startActivity(intent);
-        }else {
-
+            startActivity(new Intent(LogInActivity.this,MainActivity.class));
+        } else {
+            Toast.makeText(this, "Try again", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
         }
     }
 
