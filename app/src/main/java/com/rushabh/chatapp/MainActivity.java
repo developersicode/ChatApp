@@ -1,6 +1,7 @@
 package com.rushabh.chatapp;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +9,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,6 +24,12 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
 import com.rushabh.chatapp.DAL.DAL;
 import com.rushabh.chatapp.activity.LogInActivity;
 import com.rushabh.chatapp.adapter.messageAdapter;
@@ -57,6 +65,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     ImageView send;
     EditText textMessage;
     messageAdapter adapter;
+//    new data
+    FirebaseApp app;
+    FirebaseDatabase database;
+    FirebaseAuth auth;
+    FirebaseStorage storage;
+    DatabaseReference databaseRef;
+//    new data end
     @Override
     protected void onStart() {
         super.onStart();
@@ -76,6 +91,32 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         textMessage = (EditText) findViewById(R.id.textMessage);
 
         send.setOnClickListener(this);
+//new data
+        app = FirebaseApp.getInstance();
+        database = FirebaseDatabase.getInstance(app);
+        auth = FirebaseAuth.getInstance(app);
+        storage = FirebaseStorage.getInstance(app);
+
+        databaseRef = database.getReference("chat");
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        
+        if (user != null) {
+            // Name, email address, and profile photo Url
+            String name = user.getDisplayName();
+            String email = user.getEmail();
+            Uri photoUrl = user.getPhotoUrl();
+
+            Toast.makeText(this, name, Toast.LENGTH_SHORT).show();
+
+            // The user's ID, unique to the Firebase project. Do NOT use this value to
+            // authenticate with your backend server, if you have one. Use
+            // FirebaseUser.getToken() instead.
+            String uid = user.getUid();
+        }else {
+            Toast.makeText(this, "Not inside", Toast.LENGTH_SHORT).show();
+        }
+//        new data end
     }
 
 
@@ -136,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             String message = textMessage.getText().toString();
             String name = obj.checkData();
 
+            databaseRef.push().setValue(new message(message,name));
             messages.add(new message(message,name));
 
             adapter.notifyItemInserted(messages.size());

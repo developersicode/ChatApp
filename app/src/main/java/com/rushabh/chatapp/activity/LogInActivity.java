@@ -33,7 +33,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     private GoogleApiClient mGoogleApiClient;
     private static final String TAG = "SignInActivity";
     private static final int RC_SIGN_IN = 9001;
-//    private FirebaseAuth.AuthStateListener mAuthListener;
+    private FirebaseAuth.AuthStateListener mAuthListener;
     private FirebaseAuth mAuth;
     private DAL obj;
 
@@ -61,30 +61,23 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         signInBtn = (SignInButton) findViewById(R.id.signInBtn);
         signInBtn.setOnClickListener(this);
 
-//        signOutBtn = (Button) findViewById(R.id.signOutBtn);
-//        signOutBtn.setOnClickListener(this);
 
         mAuth = FirebaseAuth.getInstance();
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    // User is signed in
+                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
+                } else {
+                    // User is signed out
+                    Log.d(TAG, "onAuthStateChanged:signed_out");
+                }
+            }
+        };
 
-//        mAuthListener = new FirebaseAuth.AuthStateListener() {
-//            @Override
-//            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-//                FirebaseUser user = firebaseAuth.getCurrentUser();
-//                if (user != null) {
-//                    // User is signed in
-//                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-//                    Toast.makeText(LogInActivity.this, user.getDisplayName(), Toast.LENGTH_SHORT).show();
-//                } else {
-//                    // User is signed out
-//                    Log.d(TAG, "onAuthStateChanged:signed_out");
-//                    Toast.makeText(LogInActivity.this, "Loged out", Toast.LENGTH_SHORT).show();
-//                }
-//                // ...
-//            }
-//        };
-//        At last
-//        startActivity(new Intent(LogInActivity.this,MainActivity.class));
-    }
+  }
 
     private void CheckDatabase() {
         obj.openDB();
@@ -92,7 +85,6 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         if (FullName == null) {
 
         } else {
-//            name.setText("Hello" + FullName);
             Intent intent = new Intent(LogInActivity.this, MainActivity.class);
             intent.putExtra("name",FullName);
             startActivity(intent);
@@ -138,32 +130,21 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         }
     }
 
-//    private void signOut() {
-//        Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback(new ResultCallback<Status>() {
-//            @Override
-//            public void onResult(@NonNull Status status) {
-////                name.setText("Signed out");
-//            }
-//        });
-//        obj.openDB();
-//        obj.deleteData();
-//        obj.closeDB();
-//    }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
     }
 
-//    @Override
-//    protected void onStart() {
-//        super.onStart();
-//        mAuth.addAuthStateListener(mAuthListener);
-//    }
-//
-//    @Override
-//    protected void onStop() {
-//        super.onStop();
-//        mAuth.removeAuthStateListener(mAuthListener);
-//    }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mAuth.addAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mAuth.removeAuthStateListener(mAuthListener);
+    }
 }
