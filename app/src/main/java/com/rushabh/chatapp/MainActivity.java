@@ -3,6 +3,7 @@ package com.rushabh.chatapp;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,6 +26,9 @@ import com.google.android.gms.common.api.Status;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -39,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     private GoogleApiClient mGoogleApiClient;
     private FirebaseUser user;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,19 +71,22 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     FirebaseAuth mAuth;
     FirebaseStorage storage;
     DatabaseReference databaseRef;
+    private FirebaseAuth.AuthStateListener mAuthListener;
+    RecyclerView rv;
+
     @Override
     protected void onStart() {
         super.onStart();
 
         messages = new ArrayList<>();
 
-        RecyclerView rv = (RecyclerView) findViewById(R.id.rv);
+        rv = (RecyclerView) findViewById(R.id.rv);
         rv.setHasFixedSize(false);
 
         LinearLayoutManager llm = new LinearLayoutManager(this);
         rv.setLayoutManager(llm);
 
-        adapter = new messageAdapter(messages,this);
+        adapter = new messageAdapter(messages, this);
         rv.setAdapter(adapter);
 
         send = (ImageView) findViewById(R.id.send);
@@ -86,48 +94,73 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
         send.setOnClickListener(this);
         app = FirebaseApp.getInstance();
-        database = FirebaseDatabase.getInstance(app);
+        database = FirebaseDatabase.getInstance();
         mAuth = FirebaseAuth.getInstance(app);
         storage = FirebaseStorage.getInstance(app);
 
-        user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null){
-
-        }else {
-            startActivity(new Intent(MainActivity.this,LogInActivity.class));
-        }
-
         databaseRef = database.getReference("chat");
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        
+        user = mAuth.getCurrentUser();
+
         if (user != null) {
             String name = user.getDisplayName();
             String email = user.getEmail();
             Uri photoUrl = user.getPhotoUrl();
 
-            Toast.makeText(this, name, Toast.LENGTH_SHORT).show();
-
             // The user's ID, unique to the Firebase project. Do NOT use this value to
             // authenticate with your backend server, if you have one. Use
             // FirebaseUser.getToken() instead.
             String uid = user.getUid();
-        }else {
-            Toast.makeText(this, "Not inside", Toast.LENGTH_SHORT).show();
+        } else {
+            startActivity(new Intent(MainActivity.this, LogInActivity.class));
+            Toast.makeText(this, "not logged in", Toast.LENGTH_SHORT).show();
         }
+
+        databaseRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                message message = dataSnapshot.getValue(message.class);
+                messages.add(new message(message.getMessage(), message.getName()));
+
+                adapter.notifyItemInserted(messages.size());
+                adapter.notifyDataSetChanged();
+
+                rv.scrollToPosition(messages.size() - 1);
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu,menu);
+        inflater.inflate(R.menu.main_menu, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.logOut){
+        if (item.getItemId() == R.id.logOut) {
             signOut();
         }
         return super.onOptionsItemSelected(item);
@@ -169,12 +202,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
     @Override
     public void onClick(View view) {
-        if (view.getId() == R.id.send){
+        if (view.getId() == R.id.send) {
             String message = textMessage.getText().toString();
             String name = user.getDisplayName();
 
-            databaseRef.push().setValue(new message(message,name));
-            messages.add(new message(message,name));
+            if (name == null) {
+                name = user.getEmail();
+            }
+
+            databaseRef.push().setValue(new message(message, name));
+            messages.add(new message(message, name));
 
             adapter.notifyItemInserted(messages.size());
             adapter.notifyDataSetChanged();

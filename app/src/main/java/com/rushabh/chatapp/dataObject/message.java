@@ -8,6 +8,9 @@ public class message {
 
     private String message, name;
 
+    public message() {
+    }
+
     public message(String message, String name) {
         this.message = message;
         this.name = name;
